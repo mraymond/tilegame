@@ -32,10 +32,43 @@ var tileOverlays = {};
 
 var character = {
   moveDistance: 4,
+  speed: 10,
   x: 7,
   y: 5,
   possibleMoves: {},
+  walkPath: [],
+  canMove: true,
+  inMotion: false,
+  drawPosition: {},
+  currOffset: {
+    width: -tileW*.30,
+    height: -tileH*.30
+  },
+  steps: [],
+  init: function() {
+    this.drawPosition = tilePosition(this.x,this.y);
+    var neighbors = getNeighbors(this.x,this.y,this.moveDistance);
+    tileOverlays = {};
+    this.possibleMoves = {};
+    var path;
+    for(var i = 0; i < neighbors.length; i++) {
+      if(map[neighbors[i].x][neighbors[i].y] > 0) continue; // Use the walkable flag after testing
+      path = findPath(map, [this.x,this.y], [neighbors[i].x,neighbors[i].y]);
+      if(path.length > this.moveDistance+1) continue;
+      this.possibleMoves[neighbors[i].x+':'+neighbors[i].y] = path;
+      tileOverlays[neighbors[i].x+':'+neighbors[i].y] = 'rgba(255,255,0,.8)';
+    }
+  },
   move: function(x,y) {
+    if(this.x == x && this.y == y) {
+      // We didn't move anywhere
+      return;
+    }
+    this.canMove = false;
+    this.inMotion = true;
+    this.possibleMoves[x+':'+y].shift()
+    this.walkPath = this.possibleMoves[x+':'+y]; // Get rid of the first path movement, it is the current tile
+    this.populateSteps();
     this.x = x;
     this.y = y;
     var neighbors = getNeighbors(this.x,this.y,this.moveDistance);
@@ -44,11 +77,34 @@ var character = {
     var path;
     for(var i = 0; i < neighbors.length; i++) {
       if(map[neighbors[i].x][neighbors[i].y] > 0) continue; // Use the walkable flag after testing
-      path = findPath(map, [x,y], [neighbors[i].x,neighbors[i].y]);
+      path = findPath(map, [this.x,this.y], [neighbors[i].x,neighbors[i].y]);
       if(path.length > this.moveDistance+1) continue;
       this.possibleMoves[neighbors[i].x+':'+neighbors[i].y] = path;
       tileOverlays[neighbors[i].x+':'+neighbors[i].y] = 'rgba(255,255,0,.8)';
     }
+    console.log(this.possibleMoves); // Doesn't like findPath(map, [5,7], [5,9]);
+  },
+  populateSteps: function() {
+    this.steps = [];
+    var currentPosition = this.drawPosition, nextPosition = {}
+    ,deltas = {}, j;
+    for(var i = 0; i < this.walkPath.length; i++) {
+      nextPosition = tilePosition(this.walkPath[i][0],this.walkPath[i][1]);
+      deltas = {x: (currentPosition.x-nextPosition.x)/this.speed, y: (currentPosition.y-nextPosition.y)/this.speed};
+      for(j = 0; j < this.speed; j++) {
+        currentPosition.x -= deltas.x;
+        currentPosition.y -= deltas.y
+        this.steps.push({x:currentPosition.x, y: currentPosition.y});
+      }
+    }
+  },
+  moveLoop: function() {
+    if(this.steps.length == 0) {
+      this.canMove = true;
+      this.inMotion = false;
+      return;
+    }
+    this.drawPosition = this.steps.shift();
   }
 }
 
@@ -101,7 +157,7 @@ function log(message) {
 function init() {
   log("Intiated");
   //ctx.rotate(30 * Math.PI / 180);
-  character.move(character.x,character.y);
+  character.init();
   gameLoop();
   canvas.onclick = function(e){
     var r = canvas.getBoundingClientRect(),
@@ -110,7 +166,7 @@ function init() {
       clickCords = {x: x, y: y};
       clickedTile = inTiles(x, y);
       if(clickedTile === false) return;
-      if(isWalkable(clickedTile.x,clickedTile.y) && character.possibleMoves[clickedTile.x+':'+clickedTile.y]) character.move(clickedTile.x,clickedTile.y);
+      if(isWalkable(clickedTile.x,clickedTile.y) && character.canMove && character.possibleMoves[clickedTile.x+':'+clickedTile.y]) character.move(clickedTile.x,clickedTile.y);
     log(clickedTile.x +" : "+clickedTile.y);
   }
   canvas.addEventListener('mousemove', function(e) {
@@ -178,8 +234,8 @@ function drawCharacter(char) {
   // We need
   // (i + j) * tileH + mapX, (i - j) * tileH / 2 + mapY, tileW, tileH, mapHeight[i][j], tiles[map[i][j]], i, j)
   // xPos, yPos, width, height, tileHeight, tile, tileIndexX, tileIndexY
-  var drawX = (char.x + char.y) * tileH + mapX,
-  drawY = (char.x - char.y) * tileH / 2 + mapY,
+  var drawX = char.drawPosition.x,
+  drawY = char.drawPosition.y,
   yMod = mapHeight[char.x][char.y]*5;
   ctx.beginPath();
   ctx.arc(drawX+(tileW/2), drawY+(tileH/2)-yMod, 10, 0, 2 * Math.PI, false);
@@ -188,6 +244,14 @@ function drawCharacter(char) {
   ctx.strokeStyle = '#000000';
   ctx.stroke();
   ctx.closePath();
+  if(char.inMotion) char.moveLoop();
+}
+
+function tilePosition(x,y) {
+  return {
+    x: (x + y) * tileH + mapX,
+    y: (x - y) * tileH / 2 + mapY
+  }
 }
 
 function inTile(x, y, tileX, tileY) {
