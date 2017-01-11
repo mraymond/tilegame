@@ -31,10 +31,27 @@ var hoveredTile = {x: false, y: false};
 var tileOverlays = {};
 
 var character = {
-  move: 3,
-  x: 8,
-  y: 5
+  moveDistance: 4,
+  x: 7,
+  y: 5,
+  possibleMoves: {},
+  move: function(x,y) {
+    this.x = x;
+    this.y = y;
+    var neighbors = getNeighbors(this.x,this.y,this.moveDistance);
+    tileOverlays = {};
+    this.possibleMoves = {};
+    var path;
+    for(var i = 0; i < neighbors.length; i++) {
+      if(map[neighbors[i].x][neighbors[i].y] > 0) continue; // Use the walkable flag after testing
+      path = findPath(map, [x,y], [neighbors[i].x,neighbors[i].y]);
+      if(path.length > this.moveDistance+1) continue;
+      this.possibleMoves[neighbors[i].x+':'+neighbors[i].y] = path;
+      tileOverlays[neighbors[i].x+':'+neighbors[i].y] = 'rgba(255,255,0,.8)';
+    }
+  }
 }
+
 
 var map = [
   [2,2,2,0,0,2,2,2,0,0,2,2,2,2],
@@ -84,6 +101,7 @@ function log(message) {
 function init() {
   log("Intiated");
   //ctx.rotate(30 * Math.PI / 180);
+  character.move(character.x,character.y);
   gameLoop();
   canvas.onclick = function(e){
     var r = canvas.getBoundingClientRect(),
@@ -91,23 +109,16 @@ function init() {
       y = e.clientY - r.top;
       clickCords = {x: x, y: y};
       clickedTile = inTiles(x, y);
-    console.log(getNeighbors(clickedTile.x, clickedTile.y))
+      if(clickedTile === false) return;
+      if(isWalkable(clickedTile.x,clickedTile.y) && character.possibleMoves[clickedTile.x+':'+clickedTile.y]) character.move(clickedTile.x,clickedTile.y);
     log(clickedTile.x +" : "+clickedTile.y);
-    //draw();
   }
   canvas.addEventListener('mousemove', function(e) {
     var r = canvas.getBoundingClientRect(),
       x = e.clientX - r.left,
       y = e.clientY - r.top;
       hoverCords = {x: x, y: y};
-  //return (dx / (this.w * 0.5) + dy / (this.h * 0.5) <= 1);
       hoveredTile = inTiles(x, y);
-      var neighbors = getNeighbors(hoveredTile.x,hoveredTile.y,3);
-      console.log(neighbors);
-      tileOverlays = {};
-      for(var i = 0; i < neighbors.length; i++) {
-        tileOverlays[neighbors[i].x+':'+neighbors[i].y] = 'rgba(255,255,0,.9)';
-      }
   }, false);
 }
 
@@ -199,7 +210,7 @@ function checkRedrawEvents() {
 function inTiles(x, y) {
   var yMod;
   var prevHeight = 0;
-  var tile = {};
+  var tile = false;
   for (var i = 0; i < map.length; i++) {
       for (var j = map[i].length-1; j > -1; j--) {  
         //drawTile(ctx, (i + j) * tileH + mapX, (i - j) * tileH / 2 + mapY, tileW, tileH, mapHeight[i][j], tiles[map[i][j]], i, j);
@@ -211,7 +222,12 @@ function inTiles(x, y) {
         }
       }
   }
-  return tile;
+  if(tile) return tile;
+  return false;
+}
+
+function isWalkable(x,y) {
+  return tiles[map[x][y]].walkable;
 }
 
 function getNeighbors(x,y,radius) {
