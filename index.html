@@ -1,0 +1,313 @@
+<canvas id="main" width="800" height="500"></canvas>
+<h3>Log</h3>
+<div id="log"></div>
+<script src="path.js"></script>
+<script>
+var fps = 0;
+
+window.requestAnimFrame = (function(){
+    return  window.requestAnimationFrame || 
+    window.webkitRequestAnimationFrame   || 
+    window.mozRequestAnimationFrame      || 
+    window.oRequestAnimationFrame        || 
+    window.msRequestAnimationFrame       || 
+    function(callback, element){
+        window.setTimeout(function(){
+           
+            callback(+new Date);
+        }, 1000 / 60);
+    };
+})();
+
+var logBox = document.getElementById('log');
+var tileH = 32;
+var tileW = 64;
+var mapX = 0;
+var mapY = 250;
+var clickCords = {x: 0, y:0};
+var hoverCords = {x: 0, y:0};
+var clickedTile = {x: false, y: false};
+var hoveredTile = {x: false, y: false};
+var tileOverlays = {};
+
+var character = {
+  move: 3,
+  x: 8,
+  y: 5
+}
+
+var map = [
+  [2,2,2,0,0,2,2,2,0,0,2,2,2,2],
+  [2,1,1,0,0,1,1,1,0,0,1,1,1,2],
+  [2,1,1,0,0,1,1,1,0,0,1,1,1,2],
+  [2,1,1,0,0,1,1,1,0,0,1,1,1,2],
+  [2,1,1,0,0,0,0,0,0,0,0,0,0,0],
+  [2,1,1,0,0,0,0,0,0,0,0,0,0,0],
+  [2,1,1,1,1,0,0,1,1,1,1,1,1,2],
+  [2,1,1,1,1,0,0,1,1,1,1,1,1,2],
+  [2,2,2,2,2,0,0,2,2,2,2,2,2,2],
+];
+var mapHeight = [
+  [0,0,0,2,2,0,0,0,2,2,0,0,0,0],
+  [0,1,1,2,2,1,1,1,2,2,1,1,1,0],
+  [0,1,1,2,2,1,1,1,2,2,1,1,1,0],
+  [0,1,1,2,2,1,1,1,2,2,1,1,1,0],
+  [0,1,1,2,2,2,2,2,2,2,2,2,2,2],
+  [0,1,1,2,2,2,2,2,2,2,2,2,2,2],
+  [0,1,1,1,5,2,2,1,1,1,1,1,1,0],
+  [0,1,1,1,1,2,2,1,1,1,1,1,1,0],
+  [0,0,0,0,0,2,2,0,0,0,0,0,0,0],
+];
+var tiles = [
+  {
+    name: "dirt",
+    walkable: true,
+    color: "#772200"
+  },
+  {
+    name: "grass",
+    walkable: true,
+    color: "#00FF00"
+  },
+  {
+    name: "water",
+    walkable: false,
+    color: "#0000FF"
+  },
+]
+var canvas = document.getElementById('main');
+var ctx = canvas.getContext('2d');
+onNextRedraw = [];
+function log(message) {
+  logBox.innerHTML = message;
+}
+function init() {
+  log("Intiated");
+  //ctx.rotate(30 * Math.PI / 180);
+  gameLoop();
+  canvas.onclick = function(e){
+    var r = canvas.getBoundingClientRect(),
+      x = e.clientX - r.left,
+      y = e.clientY - r.top;
+      clickCords = {x: x, y: y};
+      clickedTile = inTiles(x, y);
+    console.log(getNeighbors(clickedTile.x, clickedTile.y))
+    log(clickedTile.x +" : "+clickedTile.y);
+    //draw();
+  }
+  canvas.addEventListener('mousemove', function(e) {
+    var r = canvas.getBoundingClientRect(),
+      x = e.clientX - r.left,
+      y = e.clientY - r.top;
+      hoverCords = {x: x, y: y};
+  //return (dx / (this.w * 0.5) + dy / (this.h * 0.5) <= 1);
+      hoveredTile = inTiles(x, y);
+      var neighbors = getNeighbors(hoveredTile.x,hoveredTile.y,3);
+      console.log(neighbors);
+      tileOverlays = {};
+      for(var i = 0; i < neighbors.length; i++) {
+        tileOverlays[neighbors[i].x+':'+neighbors[i].y] = 'rgba(255,255,0,.9)';
+      }
+  }, false);
+}
+
+function drawTile(ctx, xPos, yPos, width, height, tileHeight, tile, tileIndexX, tileIndexY) {
+  var yMod = tileHeight*5;
+
+  // Height
+  ctx.beginPath();
+  ctx.moveTo(xPos,(yPos+height/2)-yMod);
+  ctx.lineTo(xPos,((yPos+height/2)));
+  ctx.lineTo(xPos+width/2,yPos+height);
+  ctx.lineTo(xPos+width,(yPos+height/2));
+  ctx.lineTo(xPos+width,(yPos+height/2)-yMod);
+  ctx.fillStyle = "#000";
+  ctx.strokeStyle = "#000";
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Tile
+  ctx.beginPath();
+  ctx.moveTo(xPos+width/2,yPos-yMod);
+  ctx.lineTo(xPos+width,(yPos+height/2)-yMod);
+  ctx.lineTo(xPos+width/2,yPos+height-yMod);
+  ctx.lineTo(xPos,(yPos+height/2)-yMod);
+  ctx.fillStyle = tile.color;
+  ctx.strokeStyle = "#000";
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Overlay
+  if(hoveredTile.x === tileIndexX && hoveredTile.y === tileIndexY ) {
+    ctx.beginPath();
+    ctx.moveTo(xPos+width/2,yPos-yMod);
+    ctx.lineTo(xPos+width,(yPos+height/2)-yMod);
+    ctx.lineTo(xPos+width/2,yPos+height-yMod);
+    ctx.lineTo(xPos,(yPos+height/2)-yMod);
+    ctx.fillStyle = "rgba(255,0,0,.5)";
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  if(tileOverlays[tileIndexX+':'+tileIndexY]) {
+    ctx.beginPath();
+    ctx.moveTo(xPos+width/2,yPos-yMod);
+    ctx.lineTo(xPos+width,(yPos+height/2)-yMod);
+    ctx.lineTo(xPos+width/2,yPos+height-yMod);
+    ctx.lineTo(xPos,(yPos+height/2)-yMod);
+    ctx.fillStyle = tileOverlays[tileIndexX+':'+tileIndexY];
+    ctx.closePath();
+    ctx.fill();
+  }
+}
+
+function drawCharacter(char) {
+  // We need
+  // (i + j) * tileH + mapX, (i - j) * tileH / 2 + mapY, tileW, tileH, mapHeight[i][j], tiles[map[i][j]], i, j)
+  // xPos, yPos, width, height, tileHeight, tile, tileIndexX, tileIndexY
+  var drawX = (char.x + char.y) * tileH + mapX,
+  drawY = (char.x - char.y) * tileH / 2 + mapY,
+  yMod = mapHeight[char.x][char.y]*5;
+  ctx.beginPath();
+  ctx.arc(drawX+(tileW/2), drawY+(tileH/2)-yMod, 10, 0, 2 * Math.PI, false);
+  ctx.fillStyle = '#FF00FF';
+  ctx.fill();
+  ctx.strokeStyle = '#000000';
+  ctx.stroke();
+  ctx.closePath();
+}
+
+function inTile(x, y, tileX, tileY) {
+  var dx = Math.abs(x - tileX),
+    dy = Math.abs(y - tileY);
+
+  if (dx / (tileW * 0.5) + dy / (tileH * 0.5) <= 1) { return true };
+  return false;
+}
+
+function checkRedrawEvents() {
+  if(onNextRedraw.length == 0) return;
+  var l = onNextRedraw.length;
+  for(var i = l-1;i>=l;i--) {
+    onNextRedraw[i].call();
+    delete onNextRedraw[i];
+  }
+}
+
+function inTiles(x, y) {
+  var yMod;
+  var prevHeight = 0;
+  var tile = {};
+  for (var i = 0; i < map.length; i++) {
+      for (var j = map[i].length-1; j > -1; j--) {  
+        //drawTile(ctx, (i + j) * tileH + mapX, (i - j) * tileH / 2 + mapY, tileW, tileH, mapHeight[i][j], tiles[map[i][j]], i, j);
+        yMod = mapHeight[i][j]*5;
+        //drawTile(ctx, xPos, yPos, width, height, tileHeight, tile, tileIndexX, tileIndexY)
+        if(prevHeight <= mapHeight[i][j] && inTile(x, y, ((i + j) * tileH + mapX)+tileW/2, (((i - j) * tileH / 2 + mapY)+tileH/2)-yMod)) {
+          prevHeight = mapHeight[i][j];
+          tile = {x: i, y: j};
+        }
+      }
+  }
+  return tile;
+}
+
+function getNeighbors(x,y,radius) {
+  var neighbors = [];
+  if(!radius) radius = 1;
+  // This returns a circle around coord
+  /*for(var i = x-1; i < x+2; i++) {
+    for(var j = y-1; j < y+2; j++) {
+      if(i == x && j == y) continue;
+      neighbors.push({x:i, y:j});
+    }
+  }*/
+  var r, c, cMax, 
+    cols = map.length,
+    rows = map[0].length, 
+    rMax = Math.min(y + radius + 1, rows),
+    ret  = [],
+    yOff;
+
+  // Start `distance` rows away from the current position
+  for (r = Math.max(y - radius, 0); r < rMax; r++) {
+      yOff = Math.abs(r - y);
+              
+      // Work out where we should stop looping for this row
+      cMax = Math.min(x + radius - yOff + 1, cols);
+
+      // Start distance cols away from current pos
+      for (c = Math.max(x - radius + yOff, 0); c < cMax; c++) {
+          // If it's not the current position, add it to the result
+          if (x != c || y != r)                      
+              ret.push({x:c, y:r});
+      }
+  }
+  return ret;
+}
+
+// This was to draw an outline
+/*function drawHoverOverlay() {
+  draw();
+  var xPos = (hoveredTile.x + hoveredTile.y) * tileH + mapX;
+  var yPos = (hoveredTile.x - hoveredTile.y) * tileH / 2 + mapY;
+  var yMod = mapHeight[hoveredTile.x][hoveredTile.y]*5
+  var height = tileH;
+  var width = tileW;
+  ctx.beginPath();
+  ctx.moveTo(xPos+width/2,yPos-yMod);
+  ctx.lineTo(xPos+width,(yPos+height/2)-yMod);
+  ctx.lineTo(xPos+width/2,yPos+height-yMod);
+  ctx.lineTo(xPos,(yPos+height/2)-yMod);
+  ctx.strokeStyle = "#F00";
+  ctx.closePath();
+  ctx.stroke();
+}*/
+
+function draw() {
+  //ctx.clearRect(0, 0, 500, 500);
+  for (var i = 0; i < map.length; i++) {
+      for (var j = map[i].length-1; j > -1; j--) {  
+        drawTile(ctx, (i + j) * tileH + mapX, (i - j) * tileH / 2 + mapY, tileW, tileH, mapHeight[i][j], tiles[map[i][j]], i, j);
+      }
+  }
+  // Draw the character
+  drawCharacter(character);
+  //checkRedrawEvents();
+}
+var lastCalledTime;
+var fps;
+var lastRun;
+var game_running = true,
+  show_fps     = true,
+  canvasWidth        = canvas.width,
+  canvasHeight       = canvas.height;
+
+function showFPS(){
+  ctx.fillStyle = "Black";
+  ctx.font      = "normal 16pt Arial";
+
+  ctx.fillText(fps + " fps", 10, 26);
+}
+
+function gameLoop() {
+  if(!lastRun) {
+      lastRun = new Date().getTime();
+      requestAnimFrame(gameLoop);
+      return;
+  }
+  var delta = (new Date().getTime() - lastRun)/1000;
+  lastRun = new Date().getTime();
+  fps = Math.round(1/delta);
+  //Clear screen
+  ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+  if (show_fps) showFPS();
+  draw();
+  if (game_running) requestAnimFrame(gameLoop);
+
+} 
+init();
+</script>
