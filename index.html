@@ -47,17 +47,7 @@ var character = {
   steps: [],
   init: function() {
     this.drawPosition = tilePosition(this.x,this.y);
-    var neighbors = getNeighbors(this.x,this.y,this.moveDistance);
-    tileOverlays = {};
-    this.possibleMoves = {};
-    var path;
-    for(var i = 0; i < neighbors.length; i++) {
-      if(map[neighbors[i].x][neighbors[i].y] > 0) continue; // Use the walkable flag after testing
-      path = findPath(map, [this.x,this.y], [neighbors[i].x,neighbors[i].y]);
-      if(path.length > this.moveDistance+1) continue;
-      this.possibleMoves[neighbors[i].x+':'+neighbors[i].y] = path;
-      tileOverlays[neighbors[i].x+':'+neighbors[i].y] = 'rgba(255,255,0,.8)';
-    }
+    this.addOverlays();
   },
   move: function(x,y) {
     if(this.x == x && this.y == y) {
@@ -71,18 +61,7 @@ var character = {
     this.populateSteps();
     this.x = x;
     this.y = y;
-    var neighbors = getNeighbors(this.x,this.y,this.moveDistance);
     tileOverlays = {};
-    this.possibleMoves = {};
-    var path;
-    for(var i = 0; i < neighbors.length; i++) {
-      if(map[neighbors[i].x][neighbors[i].y] > 0) continue; // Use the walkable flag after testing
-      path = findPath(map, [this.x,this.y], [neighbors[i].x,neighbors[i].y]);
-      if(path.length > this.moveDistance+1) continue;
-      this.possibleMoves[neighbors[i].x+':'+neighbors[i].y] = path;
-      tileOverlays[neighbors[i].x+':'+neighbors[i].y] = 'rgba(255,255,0,.8)';
-    }
-    console.log(this.possibleMoves); // Doesn't like findPath(map, [5,7], [5,9]);
   },
   populateSteps: function() {
     this.steps = [];
@@ -102,9 +81,24 @@ var character = {
     if(this.steps.length == 0) {
       this.canMove = true;
       this.inMotion = false;
+      this.addOverlays();
       return;
     }
     this.drawPosition = this.steps.shift();
+  },
+  addOverlays: function() {
+    var neighbors = getNeighbors(this.x,this.y,this.moveDistance);
+    tileOverlays = {};
+    this.possibleMoves = {};
+    var path;
+    for(var i = 0; i < neighbors.length; i++) {
+      if(map[neighbors[i].x][neighbors[i].y] > 0) continue; // Use the walkable flag after testing
+      path = findPath(map, [this.x,this.y], [neighbors[i].x,neighbors[i].y]);
+      if(path.length > this.moveDistance+1) continue;
+      this.possibleMoves[neighbors[i].x+':'+neighbors[i].y] = path;
+      tileOverlays[neighbors[i].x+':'+neighbors[i].y] = 'rgba(255,255,0,.8)';
+    }
+    console.log(this.possibleMoves); // Doesn't like findPath(map, [5,7], [5,9]);
   }
 }
 
