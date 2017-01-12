@@ -47,6 +47,7 @@ var character = {
   steps: [],
   init: function() {
     this.drawPosition = tilePosition(this.x,this.y);
+    this.drawPosition.drawTile = {x: this.x, y: this.y};
     this.addOverlays();
   },
   move: function(x,y) {
@@ -66,16 +67,23 @@ var character = {
   populateSteps: function() {
     this.steps = [];
     var currentPosition = this.drawPosition, nextPosition = {}
-    ,deltas = {}, j;
+    ,deltas = {}, j, drawTile = {}, lastTile = {x: this.x, y: this.y};
     for(var i = 0; i < this.walkPath.length; i++) {
       nextPosition = tilePosition(this.walkPath[i][0],this.walkPath[i][1]);
       deltas = {x: (currentPosition.x-nextPosition.x)/this.speed, y: (currentPosition.y-nextPosition.y)/this.speed};
+      if(lastTile.x < this.walkPath[i][0] || lastTile.y > this.walkPath[i][1]) {
+        drawTile = {x: this.walkPath[i][0], y: this.walkPath[i][1]};
+      } else {
+        drawTile = {x: lastTile.x, y: lastTile.y};
+      }
       for(j = 0; j < this.speed; j++) {
         currentPosition.x -= deltas.x;
         currentPosition.y -= deltas.y
-        this.steps.push({x:currentPosition.x, y: currentPosition.y});
+        this.steps.push({x:currentPosition.x, y: currentPosition.y, drawTile: drawTile});
       }
+      lastTile = {x: this.walkPath[i][0], y: this.walkPath[i][1]};
     }
+    console.log(this.steps[this.steps.length-1]);
   },
   moveLoop: function() {
     if(this.steps.length == 0) {
@@ -98,7 +106,7 @@ var character = {
       this.possibleMoves[neighbors[i].x+':'+neighbors[i].y] = path;
       tileOverlays[neighbors[i].x+':'+neighbors[i].y] = 'rgba(255,255,0,.8)';
     }
-    console.log(this.possibleMoves); // Doesn't like findPath(map, [5,7], [5,9]);
+    //console.log(this.possibleMoves); // Doesn't like findPath(map, [5,7], [5,9]);
   }
 }
 
@@ -221,6 +229,10 @@ function drawTile(ctx, xPos, yPos, width, height, tileHeight, tile, tileIndexX, 
     ctx.fillStyle = tileOverlays[tileIndexX+':'+tileIndexY];
     ctx.closePath();
     ctx.fill();
+  }
+  if(character.drawPosition.drawTile.x == tileIndexX && character.drawPosition.drawTile.y == tileIndexY) {
+    // Draw the character
+    drawCharacter(character);
   }
 }
 
@@ -347,8 +359,6 @@ function draw() {
         drawTile(ctx, (i + j) * tileH + mapX, (i - j) * tileH / 2 + mapY, tileW, tileH, mapHeight[i][j], tiles[map[i][j]], i, j);
       }
   }
-  // Draw the character
-  drawCharacter(character);
   //checkRedrawEvents();
 }
 var lastCalledTime;
