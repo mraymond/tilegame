@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <script src="three.min.js"></script>
+  <script src="http://threejs.org/examples/js/controls/OrbitControls.js"></script>
+  <script>
+  // stats.js - http://github.com/mrdoob/stats.js
+var Stats=function(){function h(a){c.appendChild(a.dom);return a}function k(a){for(var d=0;d<c.children.length;d++)c.children[d].style.display=d===a?"block":"none";l=a}var l=0,c=document.createElement("div");c.style.cssText="position:fixed;top:0;left:0;cursor:pointer;opacity:0.9;z-index:10000";c.addEventListener("click",function(a){a.preventDefault();k(++l%c.children.length)},!1);var g=(performance||Date).now(),e=g,a=0,r=h(new Stats.Panel("FPS","#0ff","#002")),f=h(new Stats.Panel("MS","#0f0","#020"));
+if(self.performance&&self.performance.memory)var t=h(new Stats.Panel("MB","#f08","#201"));k(0);return{REVISION:16,dom:c,addPanel:h,showPanel:k,begin:function(){g=(performance||Date).now()},end:function(){a++;var c=(performance||Date).now();f.update(c-g,200);if(c>e+1E3&&(r.update(1E3*a/(c-e),100),e=c,a=0,t)){var d=performance.memory;t.update(d.usedJSHeapSize/1048576,d.jsHeapSizeLimit/1048576)}return c},update:function(){g=this.end()},domElement:c,setMode:k}};
+Stats.Panel=function(h,k,l){var c=Infinity,g=0,e=Math.round,a=e(window.devicePixelRatio||1),r=80*a,f=48*a,t=3*a,u=2*a,d=3*a,m=15*a,n=74*a,p=30*a,q=document.createElement("canvas");q.width=r;q.height=f;q.style.cssText="width:80px;height:48px";var b=q.getContext("2d");b.font="bold "+9*a+"px Helvetica,Arial,sans-serif";b.textBaseline="top";b.fillStyle=l;b.fillRect(0,0,r,f);b.fillStyle=k;b.fillText(h,t,u);b.fillRect(d,m,n,p);b.fillStyle=l;b.globalAlpha=.9;b.fillRect(d,m,n,p);return{dom:q,update:function(f,
+v){c=Math.min(c,f);g=Math.max(g,f);b.fillStyle=l;b.globalAlpha=1;b.fillRect(0,0,r,m);b.fillStyle=k;b.fillText(e(f)+" "+h+" ("+e(c)+"-"+e(g)+")",t,u);b.drawImage(q,d+a,m,n-a,p,d,m,n-a,p);b.fillRect(d+n-a,m,a,p);b.fillStyle=l;b.globalAlpha=.9;b.fillRect(d+n-a,m,a,e((1-f/v)*p))}}};"object"===typeof module&&(module.exports=Stats);
+</script>
+  <script src="tiles.js"></script>
+  <script src="path.js"></script>
+  <style>
+    html, body, * {
+      margin: 0;
+      padding: 0;
+    }
+    canvas { width: 100%; height: 100%; display: block; }
+  </style>
+</head>
+<body>
+  <div style="position:absolute;bottom:0;left:0;color: #F00">
+    <h3>Log</h3>
+    <div id="log"></div>
+  </div>
+</body>
+  <script>
+  //three.js - Isometric Projection using an Orthographic Camera
+
+var mesh, renderer, scene, camera, controls;
+
+var container, raycaster, mouse, objects = [], INTERSECTED;
+
+init();
+render();
+
+function init() {
+
+  // info
+/*  info = document.createElement( 'div' );
+  info.style.position = 'absolute';
+  info.style.top = '30px';
+  info.style.width = '100%';
+  info.style.textAlign = 'center';
+  info.style.color = '#fff';
+  info.style.fontWeight = 'bold';
+  info.style.backgroundColor = 'transparent';
+  info.style.zIndex = '1';
+  info.style.fontFamily = 'Monospace';
+  info.innerHTML = 'three.js - Isometric Projection<br/>drag mouse to rotate camera';
+  document.body.appendChild( info );*/
+
+  // renderer
+  renderer = new THREE.WebGLRenderer({ alpha: true });
+  renderer.setViewport(0, 0, window.innerWidth, window.innerHeight  )
+  renderer.setSize( window.innerWidth, window.innerHeight );
+  //renderer.shadowMapEnabled = true;
+  document.body.appendChild( renderer.domElement );
+
+  // scene
+  scene = new THREE.Scene();
+
+  // camera
+/*  var aspect = window.innerWidth / window.innerHeight;
+  var d = 30;
+  camera = new THREE.OrthographicCamera( - d * aspect, d * aspect, d, - d, 1, 1000 );
+
+  // /////////////////////////////////////////////////////////////////////////
+
+  // method 1 - use lookAt
+    //camera.position.set( 20, 20, 20 );
+    //camera.lookAt( scene.position );
+
+  // method 2 - set the x-component of rotation
+    camera.position.set( 20, 20, 20 );
+    camera.rotation.order = 'YXZ';
+    camera.rotation.y = - Math.PI / 4;
+    camera.rotation.x = Math.atan( - 1 / Math.sqrt( 2 ) );
+    camera.rotation.z = 180;
+    camera.zoom = 1;
+    camera.updateProjectionMatrix();
+
+  // /////////////////////////////////////////////////////////////////////////
+
+  // controls
+  controls = new THREE.OrbitControls( camera, renderer.domElement );
+  //controls.addEventListener( 'change', render );
+  controls.enableZoom = false;
+  controls.enablePan = true;
+  controls.enabled = true;
+  controls.maxPolarAngle = Math.PI / 2;*/
+
+
+  width = window.innerWidth
+height = window.innerHeight
+aspect = width/height
+D = 20
+
+scene = new THREE.Scene()
+camera = new THREE.OrthographicCamera(-D*aspect, D*aspect, D, -D, .1, 1000)
+camera.position.set(-20, 20, 20)
+camera.lookAt(scene.position)
+
+controls = new THREE.OrbitControls( camera, renderer.domElement );
+  //controls.addEventListener( 'change', render );
+  controls.enableZoom = true;
+  controls.enablePan = true;
+  controls.enableRotate = false;
+  controls.enabled = true;
+  controls.maxPolarAngle = Math.PI / 2;
+
+  // ambient
+scene.add( new THREE.AmbientLight( 0x444444 ) );
+
+  // light
+  var light = new THREE.PointLight( 0xffffff, 1 );
+  light.position.set( 0, 50, 50 );
+  scene.add( light );
+  //light.castShadow = true;
+
+/*  var light = new THREE.PointLight( 0xffffff, 1, 200 );
+light.position.set( -20, 25, -20 );
+light.castShadow = true;
+light.shadowCameraVisible = true;
+scene.add( light );
+var sphereSize = 1;
+var pointLightHelper = new THREE.PointLightHelper( light, sphereSize );
+scene.add( pointLightHelper );*/
+
+  // axes
+  //scene.add( new THREE.AxisHelper( 40 ) );
+
+  // grid
+  
+  var material;
+  var mesh, geometry;
+  
+
+  var map = [
+    [0, 0, 0, 0, 1],
+    [0, 1, 1, 0, 1],
+    [0, 1, 1, 0, 1],
+    [0, 0, 0, 0, 1]
+  ];
+  var tileHeight = [
+    [3, 0, 0, 0, 1],
+    [2, 2, 3, 0, 1],
+    [1, 0, 1, 0, 1],
+    [0, 1, 2, 3, 1]
+  ];
+  var offset = 0;
+  var tileSize = 5;
+  var tileHeightMod = 1;
+  
+  var tileMap = ['water', 'grass'];
+
+  for(var i = 0; i < map.length;i++) {
+    for(var j = 0; j < map[i].length; j++) {
+      material = tiles[tileMap[map[i][j]]];
+      geometry = new THREE.BoxGeometry( tileSize, tileSize+tileHeight[i][j]*tileHeightMod, tileSize );
+      mesh = new THREE.Mesh(geometry, material);
+/*      mesh.castShadow = true;
+      mesh.receiveShadow = true;*/
+      mesh.userData = {
+        x: j,
+        y: i
+      }
+      mesh.position.y = tileHeight[i][j]*tileHeightMod/2+(tileSize/2);
+      mesh.position.x = j*tileSize-offset;
+      mesh.position.z = i*tileSize-offset;
+      scene.add( mesh );
+      objects.push(mesh);
+    }
+  }
+  //renderer.render( scene, camera );
+  // Debug Stuff
+/*  var size = 25;
+var divisions = 10;
+
+var gridHelper = new THREE.GridHelper( size, divisions );
+scene.add( gridHelper );
+axes = new THREE.AxisHelper( 100 );
+scene.add( axes );*/
+  // geometry
+  var character = {
+    x: 1,
+    y: 0
+  }
+  geometry = new THREE.SphereGeometry(2, 50, 50, 0, Math.PI * 2, 0, Math.PI * 2);
+ material = new THREE.MeshNormalMaterial();
+ var player = new THREE.Mesh(geometry, material);
+ player.position.y = tileSize+tileHeight[character.y][character.x]*tileHeightMod+2;
+ player.position.x = character.x*tileSize-offset
+ player.position.z = character.y*tileSize-offset
+scene.add(player)
+
+  stats = new Stats();
+  stats.showPanel( 0 );
+ 
+  document.body.appendChild( stats.dom );
+
+raycaster = new THREE.Raycaster();
+        mouse = new THREE.Vector2();
+  document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+  document.addEventListener( 'touchstart', onDocumentTouchStart, false );
+  document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+
+
+}
+
+function onDocumentMouseMove( event ) {
+
+        event.preventDefault();
+
+        mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+        mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+
+      }
+
+
+function onDocumentTouchStart( event ) {
+
+        event.preventDefault();
+
+        event.clientX = event.touches[0].clientX;
+        event.clientY = event.touches[0].clientY;
+        onDocumentMouseDown( event );
+
+      }
+
+      function onDocumentMouseDown( event ) {
+
+        event.preventDefault();
+
+        mouse.x = ( event.clientX / renderer.domElement.clientWidth ) * 2 - 1;
+        mouse.y = - ( event.clientY / renderer.domElement.clientHeight ) * 2 + 1;
+
+        raycaster.setFromCamera( mouse, camera );
+
+        var intersects = raycaster.intersectObjects( objects );
+
+        if ( intersects.length > 0 ) {
+          if ( intersects[0].object.material == "MultiMaterial" ) {
+            intersects[0].object.material.materials[2].color.setHex( 0xff0000 );
+
+          }
+
+        }
+
+      }
+
+
+
+
+function render() {
+  stats.begin();
+  var temp = 2;
+  raycaster.setFromCamera( mouse, camera );
+
+        var intersects = raycaster.intersectObjects( scene.children );
+
+        if ( intersects.length > 0 ) {
+          if ( INTERSECTED != intersects[ 0 ].object && intersects[0].object.material.type == "MultiMaterial" ) {
+            if ( INTERSECTED ) INTERSECTED.material.materials[temp].color.setHex( INTERSECTED.currentHex );
+            INTERSECTED = intersects[ 0 ].object;
+            console.log("Hovering over",INTERSECTED.userData.x, INTERSECTED.userData.y);
+            INTERSECTED.currentHex = INTERSECTED.material.materials[temp].color.getHex();
+            INTERSECTED.material.materials[temp].color.setHex( 0xff0000 );
+
+          }
+
+        } else {
+
+          if ( INTERSECTED ) INTERSECTED.material.materials[temp].color.setHex( INTERSECTED.currentHex );
+
+          INTERSECTED = null;
+
+        }
+        
+
+  renderer.render( scene, camera );
+  stats.end();
+  requestAnimationFrame(render);
+}
+
+  </script>
+</html>
+

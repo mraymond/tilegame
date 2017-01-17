@@ -1,8 +1,3 @@
-<canvas id="main" width="800" height="500"></canvas>
-<h3>Log</h3>
-<div id="log"></div>
-<script src="path.js"></script>
-<script>
 var fps = 0;
 
 window.requestAnimFrame = (function(){
@@ -29,6 +24,7 @@ var hoverCords = {x: 0, y:0};
 var clickedTile = {x: false, y: false};
 var hoveredTile = {x: false, y: false};
 var tileOverlays = {};
+
 
 var character = {
   moveDistance: 4,
@@ -79,7 +75,6 @@ var character = {
       }
       lastTile = {x: this.walkPath[i][0], y: this.walkPath[i][1]};
     }
-    console.log(this.steps[this.steps.length-1]);
   },
   moveLoop: function() {
     if(this.inMotion && this.steps.length == 0) {
@@ -88,9 +83,11 @@ var character = {
       this.addOverlays();
       this.drawPosition.drawTile.x = this.x;
       this.drawPosition.drawTile.y = this.y;
+      generateDrawMap();
       return;
     }
     this.drawPosition = this.steps.shift();
+    generateDrawMap();
   },
   addOverlays: function() {
     var neighbors = getNeighbors(this.x,this.y,this.moveDistance);
@@ -116,7 +113,7 @@ var map = [
   [2,1,1,0,0,1,1,1,0,0,1,1,1,2],
   [2,1,1,0,0,0,0,0,0,0,0,0,0,0],
   [2,1,1,0,0,0,0,0,0,0,0,0,0,0],
-  [2,1,1,1,1,0,0,1,1,1,1,1,1,2],
+  [2,1,1,1,0,0,0,1,1,1,1,1,1,2],
   [2,1,1,1,1,0,0,1,1,1,1,1,1,2],
   [2,2,2,2,2,0,0,2,2,2,2,2,2,2],
   [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
@@ -125,6 +122,7 @@ var map = [
   [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
   [-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1],
 ];
+var drawMap = [];
 var mapHeight = [
   [0,0,0,2,2,0,0,0,2,2,0,0,0,0],
   [0,1,1,2,2,1,1,1,2,2,1,1,1,0],
@@ -154,7 +152,11 @@ var tiles = [
   },
 ]
 var canvas = document.getElementById('main');
-var ctx = canvas.getContext('2d');
+var ctx2 = canvas.getContext('2d');
+var renderCanvas = document.createElement('canvas');
+renderCanvas.width = canvas.width;
+renderCanvas.height = canvas.height;
+var ctx = renderCanvas.getContext('2d');
 onNextRedraw = [];
 function log(message) {
   logBox.innerHTML = message;
@@ -163,6 +165,7 @@ function init() {
   log("Intiated");
   //ctx.rotate(30 * Math.PI / 180);
   character.init();
+  generateDrawMap()
   gameLoop();
   canvas.onclick = function(e){
     var r = canvas.getBoundingClientRect(),
@@ -358,12 +361,20 @@ function getNeighbors(x,y,radius) {
 
 function draw() {
   //ctx.clearRect(0, 0, 500, 500);
-  var mapYLength = map[0].length;
+  /*var mapYLength = map[0].length;
   for(var j = mapYLength-1; j > -1; j--) {
     for(var i = 0;i < map.length; i++) {
       if(map[i][j] < 0) continue;
         if(map[i][j] < 0) continue;
         drawTile(ctx, (i + j) * tileH + mapX, (i - j) * tileH / 2 + mapY, tileW, tileH, mapHeight[i][j], tiles[map[i][j]], i, j);
+    }
+  }*/
+
+  for(var i = 0; i< drawMap.length; i++) {
+    if(drawMap[i].drawProps.type == "map") {
+      drawTileNew(drawMap[i].x, drawMap[i].y, tiles[map[drawMap[i].drawProps.x][drawMap[i].drawProps.y]], drawMap[i].drawProps.x, drawMap[i].drawProps.y);
+    } else if(drawMap[i].drawProps.type == "character") {
+      drawCharacter(character);
     }
   }
 
@@ -375,9 +386,70 @@ function draw() {
   }*/
   //checkRedrawEvents();
 }
+
+function drawTileNew(xPos, yPos, tile, tileIndexX, tileIndexY) {
+  var yMod = mapHeight[tileIndexX][tileIndexY]*5;
+
+  // Height
+  ctx.beginPath();
+  ctx.moveTo(xPos,(yPos+tileH/2)-yMod);
+  ctx.lineTo(xPos,((yPos+tileH/2)));
+  ctx.lineTo(xPos+tileW/2,yPos+tileH);
+  ctx.lineTo(xPos+tileW,(yPos+tileH/2));
+  ctx.lineTo(xPos+tileW,(yPos+tileH/2)-yMod);
+  ctx.fillStyle = "#000";
+  ctx.strokeStyle = "#000";
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Tile
+  ctx.beginPath();
+  ctx.moveTo(xPos+tileW/2,yPos-yMod);
+  ctx.lineTo(xPos+tileW,(yPos+tileH/2)-yMod);
+  ctx.lineTo(xPos+tileW/2,yPos+tileH-yMod);
+  ctx.lineTo(xPos,(yPos+tileH/2)-yMod);
+  ctx.fillStyle = tile.color;
+  ctx.strokeStyle = "#000";
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+
+  // Overlay
+  /*if(hoveredTile.x === tileIndexX && hoveredTile.y === tileIndexY ) {
+    ctx.beginPath();
+    ctx.moveTo(xPos+width/2,yPos-yMod);
+    ctx.lineTo(xPos+width,(yPos+height/2)-yMod);
+    ctx.lineTo(xPos+width/2,yPos+height-yMod);
+    ctx.lineTo(xPos,(yPos+height/2)-yMod);
+    ctx.fillStyle = "rgba(255,0,0,.5)";
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  if(tileOverlays[tileIndexX+':'+tileIndexY]) {
+    ctx.beginPath();
+    ctx.moveTo(xPos+width/2,yPos-yMod);
+    ctx.lineTo(xPos+width,(yPos+height/2)-yMod);
+    ctx.lineTo(xPos+width/2,yPos+height-yMod);
+    ctx.lineTo(xPos,(yPos+height/2)-yMod);
+    ctx.fillStyle = tileOverlays[tileIndexX+':'+tileIndexY];
+    ctx.closePath();
+    ctx.fill();
+  }
+  if(character.drawPosition.drawTile.x == tileIndexX && character.drawPosition.drawTile.y == tileIndexY) {
+    // Draw the character
+    drawCharacter(character);
+  }*/
+}
+
+
+
 var lastCalledTime;
 var fps;
 var lastRun;
+var lastUpdate;
 var game_running = true,
   show_fps     = true,
   canvasWidth        = canvas.width,
@@ -392,20 +464,88 @@ function showFPS(){
 
 function gameLoop() {
   if(!lastRun) {
-      lastRun = new Date().getTime();
+      lastRun = lastUpdate = new Date().getTime();
       requestAnimFrame(gameLoop);
       return;
   }
   var delta = (new Date().getTime() - lastRun)/1000;
   lastRun = new Date().getTime();
-  fps = Math.round(1/delta);
+  if(lastUpdate+500 < new Date().getTime()) {
+    fps = Math.round(1/delta);
+    lastUpdate = new Date().getTime();
+  }
   //Clear screen
   ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
   if (show_fps) showFPS();
   draw();
+  ctx2.clearRect(0, 0, canvasWidth, canvasHeight);
+  ctx2.drawImage(renderCanvas, 0, 0);
   if (game_running) requestAnimFrame(gameLoop);
 
 } 
+
+function tileMapper(tile) {
+
+    // New XY position simply adds Z to X and Y.
+    return {
+        x: tile.x,
+        y: tile.y,
+        z: tile.z,
+        nearness: tile.x-tile.y-(tile.z)-tile.priority,
+        drawProps: tile.drawProps,
+        // Compute horizontal distance from origin.
+        h: (tile.x - tile.y) * Math.cos(Math.PI/6),
+
+        // Compute vertical distance from origin.
+        v: (tile.x + tile.y) / 2
+    };
+}
+
+function generateDrawMap() {
+  drawMap = []; // Clear it
+  var drawProps;
+  var mapYLength = map[0].length;
+  for(var j = mapYLength-1; j > -1; j--) {
+    for(var i = 0;i < map.length; i++) {
+      if(map[i][j] < 0) continue;
+        if(map[i][j] < 0) continue;
+        drawProps = {type: "map", x: i, y:j};
+        drawMap.push(tileMapper({x: (i + j) * tileH + mapX, y: (i - j) * tileH / 2 + mapY, z: mapHeight[i][j], drawProps: drawProps, priority: 0}));
+        if(i == 6 && j == 5) console.log(6,5,drawMap[drawMap.length-1]);
+        if(i == 5 && j == 5) console.log(5,5,drawMap[drawMap.length-1]);
+        if(i == 5 && j == 4) console.log(5,4,drawMap[drawMap.length-1]);
+        if(i == 6 && j == 4) console.log(6,4,drawMap[drawMap.length-1]);
+    }
+  }
+  // drawMap done, add characters
+  drawProps = {type: "character", x: character.drawPosition.drawTile.x, y: character.drawPosition.drawTile.y}; // Add props later
+  drawMap.push(tileMapper({x: character.drawPosition.x, y: character.drawPosition.y, z: mapHeight[character.drawPosition.drawTile.x][character.drawPosition.drawTile.y], drawProps: drawProps, priority: .1}));
+  console.log(drawMap[drawMap.length-1]);
+  drawMap.sort(sortDrawMap);
+}
+
+function sortDrawMap(box1, box2) {
+      // test for intersection x-axis
+    // (lower x value is in front)
+    /*if(box1.zmax - box2.zmax != 0) return box1.zmax - box2.zmax;
+    if(box1.drawProps.x - box2.drawProps.x != 0) return box1.drawProps.x - box2.drawProps.x;
+    return box2.drawProps.y - box1.drawProps.y;*/
+    //if(box2.nearness-box1.nearness == 0) return box2.z-box1.z
+    return box2.nearness-box1.nearness;
+    //return;
+    if (box1.xmin >= box2.xmax) { return -1; }
+    else if (box2.xmin >= box1.xmax) { return 1; }
+
+    // test for intersection y-axis
+    // (lower y value is in front)
+    if (box1.ymin >= box2.ymax) { return -1; }
+    else if (box2.ymin >= box1.ymax) { return 1; }
+
+    // test for intersection z-axis
+    // (higher z value is in front)
+    if (box1.zmin >= box2.zmax) { return 1; }
+    else if (box2.zmin >= box1.zmax) { return -1; }
+
+}
 init();
-</script>
