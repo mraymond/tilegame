@@ -13,6 +13,7 @@ v){c=Math.min(c,f);g=Math.max(g,f);b.fillStyle=l;b.globalAlpha=1;b.fillRect(0,0,
 </script>
   <script src="tiles.js"></script>
   <script src="path.js"></script>
+  <script src="Entity.js"></script>
   <style>
     html, body, * {
       margin: 0;
@@ -33,6 +34,33 @@ v){c=Math.min(c,f);g=Math.max(g,f);b.fillStyle=l;b.globalAlpha=1;b.fillRect(0,0,
 var mesh, renderer, scene, camera, controls;
 
 var container, raycaster, mouse, objects = [], INTERSECTED;
+
+
+var Map = {
+  tileSize: 5,
+  tileHeightMod: 1,
+  tiles: [
+    [0, 1, 1, 1, 1, 1, 1, -1],
+    [0, 1, 1, 1, 1, 1, 1, -1],
+    [0, 1, 1, 0, 0, 0, 1, -1],
+    [0, 1, 1, 1, 1, 0, 1, -1],
+    [0, 1, 1, 1, 1, 0, 1, -1],
+    [0, 0, 0, 1, 1, 0, 1, -1],
+    [0, 0, 0, 1, 1, 1, 1, -1],
+    [0, 0, 0, 1, 1, 1, 1, -1],
+  ],
+  tileHeight: [
+    [0, 1, 2, 2, 2, 2, 2],
+    [0, 1, 2, 2, 2, 2, 2],
+    [0, 1, 2, 0, 0, 0, 1],
+    [0, 2, 3, 4, 3, 0, 1],
+    [0, 1, 2, 2, 2, 0, 1],
+    [0, 0, 0, 1, 1, 0, 1],
+    [0, 0, 0, 1, 1, 1, 1],
+    [0, 0, 0, 1, 1, 1, 1],
+  ],
+  offset: 0
+};
 
 init();
 render();
@@ -138,39 +166,23 @@ scene.add( pointLightHelper );*/
   var material;
   var mesh, geometry;
   
-
-  var map = [
-    [0, 0, 0, 0, 1],
-    [0, 1, 1, 0, 1],
-    [0, 1, 1, 0, 1],
-    [0, 0, 0, 0, 1]
-  ];
-  var tileHeight = [
-    [3, 0, 0, 0, 1],
-    [2, 2, 3, 0, 1],
-    [1, 0, 1, 0, 1],
-    [0, 1, 2, 3, 1]
-  ];
-  var offset = 0;
-  var tileSize = 5;
-  var tileHeightMod = 1;
-  
   var tileMap = ['water', 'grass'];
 
-  for(var i = 0; i < map.length;i++) {
-    for(var j = 0; j < map[i].length; j++) {
-      material = tiles[tileMap[map[i][j]]];
-      geometry = new THREE.BoxGeometry( tileSize, tileSize+tileHeight[i][j]*tileHeightMod, tileSize );
-      mesh = new THREE.Mesh(geometry, material);
+  for(var i = 0; i < Map.tiles.length;i++) {
+    for(var j = 0; j < Map.tiles[i].length; j++) {
+      if(Map.tiles[i][j] < 0 ) continue;
+      material = tiles[tileMap[Map.tiles[i][j]]];
+      geometry = new THREE.BoxGeometry( Map.tileSize, Map.tileSize+Map.tileHeight[i][j]*Map.tileHeightMod, Map.tileSize );
+      mesh = new THREE.Mesh(geometry, material());
 /*      mesh.castShadow = true;
       mesh.receiveShadow = true;*/
       mesh.userData = {
         x: j,
         y: i
       }
-      mesh.position.y = tileHeight[i][j]*tileHeightMod/2+(tileSize/2);
-      mesh.position.x = j*tileSize-offset;
-      mesh.position.z = i*tileSize-offset;
+      mesh.position.y = Map.tileHeight[i][j]*Map.tileHeightMod/2+(Map.tileSize/2);
+      mesh.position.x = j*Map.tileSize-Map.offset;
+      mesh.position.z = i*Map.tileSize-Map.offset;
       scene.add( mesh );
       objects.push(mesh);
     }
@@ -185,7 +197,7 @@ scene.add( gridHelper );
 axes = new THREE.AxisHelper( 100 );
 scene.add( axes );*/
   // geometry
-  var character = {
+  /*var character = {
     x: 1,
     y: 0
   }
@@ -195,7 +207,8 @@ scene.add( axes );*/
  player.position.y = tileSize+tileHeight[character.y][character.x]*tileHeightMod+2;
  player.position.x = character.x*tileSize-offset
  player.position.z = character.y*tileSize-offset
-scene.add(player)
+scene.add(player)*/
+  Entity.init();
 
   stats = new Stats();
   stats.showPanel( 0 );
@@ -213,44 +226,47 @@ raycaster = new THREE.Raycaster();
 
 function onDocumentMouseMove( event ) {
 
-        event.preventDefault();
+  event.preventDefault();
 
-        mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
-        mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
+  mouse.x = ( event.clientX / window.innerWidth ) * 2 - 1;
+  mouse.y = - ( event.clientY / window.innerHeight ) * 2 + 1;
 
-      }
+}
 
 
 function onDocumentTouchStart( event ) {
 
-        event.preventDefault();
+  event.preventDefault();
 
-        event.clientX = event.touches[0].clientX;
-        event.clientY = event.touches[0].clientY;
-        onDocumentMouseDown( event );
+  event.clientX = event.touches[0].clientX;
+  event.clientY = event.touches[0].clientY;
+  onDocumentMouseDown( event );
 
-      }
+}
 
-      function onDocumentMouseDown( event ) {
+function onDocumentMouseDown( event ) {
+  if(event.which !== 1) return;
+  /*event.preventDefault();
+  mouse.x = ( event.clientX / renderer.domElement.clientWidth ) * 2 - 1;
+  mouse.y = - ( event.clientY / renderer.domElement.clientHeight ) * 2 + 1;
 
-        event.preventDefault();
+  raycaster.setFromCamera( mouse, camera );
 
-        mouse.x = ( event.clientX / renderer.domElement.clientWidth ) * 2 - 1;
-        mouse.y = - ( event.clientY / renderer.domElement.clientHeight ) * 2 + 1;
+  var intersects = raycaster.intersectObjects( objects );
 
-        raycaster.setFromCamera( mouse, camera );
+  if ( intersects.length > 0 ) {
+    if ( intersects[0].object.material == "MultiMaterial" ) {
+      intersects[0].object.material.materials[2].color.setHex( 0xff0000 );
+      console.log("Clicked ",INTERSECTED.userData.x, INTERSECTED.userData.y);
+    }
 
-        var intersects = raycaster.intersectObjects( objects );
+  }*/
+  if(INTERSECTED) {
+    Entity.move(INTERSECTED.userData.x, INTERSECTED.userData.y);  
+    console.log("Clicked ",INTERSECTED.userData.x, INTERSECTED.userData.y);
+  }
 
-        if ( intersects.length > 0 ) {
-          if ( intersects[0].object.material == "MultiMaterial" ) {
-            intersects[0].object.material.materials[2].color.setHex( 0xff0000 );
-
-          }
-
-        }
-
-      }
+}
 
 
 
@@ -260,32 +276,34 @@ function render() {
   var temp = 2;
   raycaster.setFromCamera( mouse, camera );
 
-        var intersects = raycaster.intersectObjects( scene.children );
+  var intersects = raycaster.intersectObjects( scene.children );
 
-        if ( intersects.length > 0 ) {
-          if ( INTERSECTED != intersects[ 0 ].object && intersects[0].object.material.type == "MultiMaterial" ) {
-            if ( INTERSECTED ) INTERSECTED.material.materials[temp].color.setHex( INTERSECTED.currentHex );
-            INTERSECTED = intersects[ 0 ].object;
-            console.log("Hovering over",INTERSECTED.userData.x, INTERSECTED.userData.y);
-            INTERSECTED.currentHex = INTERSECTED.material.materials[temp].color.getHex();
-            INTERSECTED.material.materials[temp].color.setHex( 0xff0000 );
+  if ( intersects.length > 0 ) {
+    if ( INTERSECTED != intersects[ 0 ].object && intersects[0].object.material.type == "MultiMaterial" ) {
+      if ( INTERSECTED ) INTERSECTED.material.materials[temp].emissive = new THREE.Color(0x000000);
+      INTERSECTED = intersects[ 0 ].object;
+      console.log("Hovering over",INTERSECTED.userData.x, INTERSECTED.userData.y);
+      INTERSECTED.material.materials[temp].emissive = new THREE.Color(0xff0000)
+      /*INTERSECTED.currentHex = INTERSECTED.material.materials[temp].color.getHex();
+      INTERSECTED.material.materials[temp].color.setHex( 0xff0000 );*/
 
-          }
+    }
 
-        } else {
+  } else {
+    if(INTERSECTED) {
+      INTERSECTED.material.materials[temp].emissive = new THREE.Color(0x000000)
 
-          if ( INTERSECTED ) INTERSECTED.material.materials[temp].color.setHex( INTERSECTED.currentHex );
-
-          INTERSECTED = null;
-
-        }
+      INTERSECTED = null;
+    }
+  }
         
-
+  if(Entity.inMotion) {
+    Entity.drawLoop();
+  }
   renderer.render( scene, camera );
   stats.end();
   requestAnimationFrame(render);
 }
-
   </script>
 </html>
 

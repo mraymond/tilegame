@@ -147,7 +147,7 @@ function findPath(world, pathStart, pathEnd)
 	{
 		return ((world[x] != null) &&
 			(world[x][y] != null) &&
-			(world[x][y] <= maxWalkableTileNum));
+			(world[x][y] > 0));
 	};
 
 	// Node function, returns a new object with Node properties
