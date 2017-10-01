@@ -59,7 +59,12 @@ var Map = {
     [0, 0, 0, 1, 1, 1, 1],
     [0, 0, 0, 1, 1, 1, 1],
   ],
-  offset: 0
+  offset: 0,
+  isWalkable: function(x,y) {
+    // Hardcoding water as not walkable
+    if(this.tiles[y][x] === 0) return false;
+    return true;
+  }
 };
 
 init();
