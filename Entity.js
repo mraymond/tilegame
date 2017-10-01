@@ -26,16 +26,16 @@ var Entity = {
     this.addOverlays();
   },
   move: function(x,y) {
-    if(!this.canMove && this.x == x && this.y == y) {
+    if(!this.canMove || (this.x == x && this.y == y) || !this.possibleMoves[x+':'+y]) {
       // We didn't move anywhere
       return;
     }
     this.canMove = false;
     this.inMotion = true;
-    console.log(this.possibleMoves);
     this.possibleMoves[x+':'+y].shift()
     this.walkPath = this.possibleMoves[x+':'+y]; // Get rid of the first path movement, it is the current tile
     this.populateSteps();
+    console.log(JSON.parse(JSON.stringify(this.steps)));
     this.x = x;
     this.y = y;
     tileOverlays = {};
@@ -52,9 +52,10 @@ var Entity = {
     for(var i = 0; i < this.walkPath.length; i++) {
       nextPosition = {
         x: this.walkPath[i][1]*Map.tileSize-Map.offset,
-        y: this.walkPath[i][0]*Map.tileSize-Map.offset
+        z: this.walkPath[i][0]*Map.tileSize-Map.offset
       };
-      deltas = {x: (currentPosition.x-nextPosition.x)/this.speed, y: (currentPosition.z-nextPosition.y)/this.speed};
+      console.log(currentPosition,nextPosition);
+      deltas = {x: (currentPosition.x-nextPosition.x)/this.speed, z: (currentPosition.z-nextPosition.z)/this.speed};
       if(lastTile.x < this.walkPath[i][1] || lastTile.y > this.walkPath[i][0]) {
         drawTile = {x: this.walkPath[i][1], y: this.walkPath[i][0]};
       } else {
@@ -62,8 +63,8 @@ var Entity = {
       }
       for(j = 0; j < this.speed; j++) {
         currentPosition.x -= deltas.x;
-        currentPosition.y -= deltas.y
-        this.steps.push({x:currentPosition.x, z: currentPosition.z, drawTile: drawTile});
+        currentPosition.z -= deltas.z
+        this.steps.push({x:currentPosition.x, z: currentPosition.z, y:Map.tileSize+Map.tileHeight[this.walkPath[i][0]][this.walkPath[i][1]]*Map.tileHeightMod+2, drawTile: drawTile});
       }
       lastTile = {x: this.walkPath[i][1], y: this.walkPath[i][0]};
     }
@@ -75,14 +76,14 @@ var Entity = {
       this.inMotion = false;
       this.addOverlays();
       this.drawPosition.drawTile.x = this.x;
-      this.drawPosition.drawTile.y = this.y;
+      this.drawPosition.drawTile.z = this.y;
       this.mesh.position.y = Map.tileSize+Map.tileHeight[this.y][this.x]*Map.tileHeightMod+2;
       this.mesh.position.x = this.x*Map.tileSize-Map.offset
       this.mesh.position.z = this.y*Map.tileSize-Map.offset
       return;
     }
     this.drawPosition = this.steps.shift();
-    this.mesh.position.y = Map.tileSize+Map.tileHeight[this.y][this.x]*Map.tileHeightMod+2;
+    this.mesh.position.y = this.drawPosition.y;
     this.mesh.position.x = this.drawPosition.x;
     this.mesh.position.z = this.drawPosition.z;
   },
@@ -92,7 +93,7 @@ var Entity = {
     this.possibleMoves = {};
     var path;
     for(var i = 0; i < neighbors.length; i++) {
-      if(Map.tiles[neighbors[i].x][neighbors[i].y] === 0) continue; // Use the walkable flag after testing
+      if(!Map.isWalkable(neighbors[i].x,neighbors[i].y)) continue; // Use the walkable flag after testing
       path = findPath(Map.tiles, [this.y,this.x], [neighbors[i].y,neighbors[i].x]);
       if(path.length > this.moveDistance+1) continue;
       this.possibleMoves[neighbors[i].x+':'+neighbors[i].y] = path;
