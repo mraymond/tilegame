@@ -147,7 +147,7 @@ function findPath(world, pathStart, pathEnd)
 	{
 		return ((world[x] != null) &&
 			(world[x][y] != null) &&
-			(world[x][y] > 0));
+			(world[x][y].walkable));
 	};
 
 	// Node function, returns a new object with Node properties
