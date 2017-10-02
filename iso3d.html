@@ -14,6 +14,7 @@ v){c=Math.min(c,f);g=Math.max(g,f);b.fillStyle=l;b.globalAlpha=1;b.fillRect(0,0,
   <script src="tiles.js"></script>
   <script src="path.js"></script>
   <script src="Entity.js"></script>
+  <script src="testmap.js"></script>
   <style>
     html, body, * {
       margin: 0;
@@ -35,37 +36,125 @@ var mesh, renderer, scene, camera, controls;
 
 var container, raycaster, mouse, objects = [], INTERSECTED;
 
+var tileMap = ['water', 'grass'];
 
-var Map = {
-  tileSize: 5,
-  tileHeightMod: 1,
-  tiles: [
-    [0, 1, 1, 1, 1, 1, 1, -1],
-    [0, 1, 1, 1, 1, 1, 1, -1],
-    [0, 1, 1, 0, 0, 0, 1, -1],
-    [0, 1, 1, 1, 1, 0, 1, -1],
-    [0, 1, 1, 1, 1, 0, 1, -1],
-    [0, 0, 0, 1, 1, 0, 1, -1],
-    [0, 0, 0, 1, 1, 1, 1, -1],
-    [0, 0, 0, 1, 1, 1, 1, -1],
-  ],
-  tileHeight: [
-    [0, 1, 2, 2, 2, 2, 2],
-    [0, 1, 2, 2, 2, 2, 2],
-    [0, 1, 2, 0, 0, 0, 1],
-    [0, 2, 3, 4, 3, 0, 1],
-    [0, 1, 2, 2, 2, 0, 1],
-    [0, 0, 0, 1, 1, 0, 1],
-    [0, 0, 0, 1, 1, 1, 1],
-    [0, 0, 0, 1, 1, 1, 1],
-  ],
-  offset: 0,
-  isWalkable: function(x,y) {
+class Tile {
+  constructor(material, height=0, walkable=true) {
+    this.materialId = material;
+    this.material = tileMaterials[tileMap[material]];
+    this.height = height;
+    this.walkable = walkable;
+  }
+
+  createMesh(geometry) {
+    this.mesh = new THREE.Mesh(geometry, this.material());
+  }
+}
+
+const nullTile = -1;
+
+class MapClass {
+  constructor(mapConfig) {
+    this.tiles = [];
+    this.tileSize = mapConfig.tileSize;
+    this.tileHeightMod = mapConfig.tileHeightMod;
+    this.offset = mapConfig.offset;
+    this.mapSize = this.findMapSize(mapConfig.tiles);
+    mapConfig.tiles = this.expandMap(mapConfig.tiles);
+    this.createMap(mapConfig.tiles, mapConfig.tileHeight);
+  }
+
+  createMap(tiles, tileHeight) {
+    var geometry, mesh, tile;
+    for(var i = 0; i < tiles.length;i++) {
+      // Start a new row
+      this.tiles.push([]);
+      for(var j = 0; j < tiles[i].length; j++) {
+        if(tiles[i][j] < 0 ) continue;
+        // TODO: Add walkable
+        tile = new Tile(tiles[i][j], tileHeight[i][j], (tiles[i][j]==1?true:false));
+        geometry = new THREE.BoxGeometry( this.tileSize, this.tileSize+tileHeight[i][j]*this.tileHeightMod, this.tileSize );
+        tile.createMesh(geometry)
+        /* This is can cause performance issues
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;*/
+        tile.mesh.userData = {
+          x: j,
+          y: i
+        }
+        tile.mesh.position.y = tileHeight[i][j]*this.tileHeightMod/2+(this.tileSize/2);
+        tile.mesh.position.x = j*this.tileSize-this.offset;
+        tile.mesh.position.z = i*this.tileSize-this.offset;
+        this.tiles[i].push(tile);
+        scene.add( tile.mesh );
+        objects.push(tile.mesh);
+      }
+    }
+  }
+
+  // Maps need to be perfect squares for A* Pathfinding
+  // Use this to find the biggest part of the map
+  findMapSize(tiles) {
+    const yAxis = tiles.length; // This is the longest y can be
+    let xAxis = 0;
+    for(var i = 0; i < yAxis;i++) {
+      if(tiles[i].length < xAxis) xAxis = tiles[i].length;
+    }
+    if(yAxis > xAxis) return yAxis
+    return xAxis
+  }
+
+  expandMap(tiles) {
+    // Add to the y axis if needed
+    if(tiles.length < this.mapSize) {
+      Array.apply(null, Array(this.mapSize - tiles.length)).map(function () { 
+        return Array.apply(null, Array(this.mapSize)).map(() => nullTile);
+      });
+    }
+    tiles = tiles.map((row) => {
+      if(row.length < this.mapSize) {
+        row.push(Array.apply(null, Array(this.mapSize - row.length)).map(() => nullTile));
+      }
+      return row;
+    });
+    return tiles;
+  }
+
+  isWalkable(x,y) {
     // Hardcoding water as not walkable
-    if(this.tiles[y][x] === 0) return false;
-    return true;
+    if(this.tiles[y] == null || this.tiles[y][x] == null) return false;
+    return this.tiles[y][x].walkable;
   }
 };
+
+
+
+/*var material;
+  var mesh, geometry;
+  
+  var tileMap = ['water', 'grass'];
+
+  for(var i = 0; i < Map.tiles.length;i++) {
+    for(var j = 0; j < Map.tiles[i].length; j++) {
+      if(Map.tiles[i][j] < 0 ) continue;
+      material = tiles[tileMap[Map.tiles[i][j]]];
+      geometry = new THREE.BoxGeometry( Map.tileSize, Map.tileSize+Map.tileHeight[i][j]*Map.tileHeightMod, Map.tileSize );
+      mesh = new THREE.Mesh(geometry, material());
+
+      mesh.userData = {
+        x: j,
+        y: i
+      }
+      mesh.position.y = Map.tileHeight[i][j]*Map.tileHeightMod/2+(Map.tileSize/2);
+      mesh.position.x = j*Map.tileSize-Map.offset;
+      mesh.position.z = i*Map.tileSize-Map.offset;
+      scene.add( mesh );
+      objects.push(mesh);
+    }
+  }*/
+
+
+
 
 init();
 render();
@@ -168,30 +257,6 @@ scene.add( pointLightHelper );*/
 
   // grid
   
-  var material;
-  var mesh, geometry;
-  
-  var tileMap = ['water', 'grass'];
-
-  for(var i = 0; i < Map.tiles.length;i++) {
-    for(var j = 0; j < Map.tiles[i].length; j++) {
-      if(Map.tiles[i][j] < 0 ) continue;
-      material = tiles[tileMap[Map.tiles[i][j]]];
-      geometry = new THREE.BoxGeometry( Map.tileSize, Map.tileSize+Map.tileHeight[i][j]*Map.tileHeightMod, Map.tileSize );
-      mesh = new THREE.Mesh(geometry, material());
-/*      mesh.castShadow = true;
-      mesh.receiveShadow = true;*/
-      mesh.userData = {
-        x: j,
-        y: i
-      }
-      mesh.position.y = Map.tileHeight[i][j]*Map.tileHeightMod/2+(Map.tileSize/2);
-      mesh.position.x = j*Map.tileSize-Map.offset;
-      mesh.position.z = i*Map.tileSize-Map.offset;
-      scene.add( mesh );
-      objects.push(mesh);
-    }
-  }
   //renderer.render( scene, camera );
   // Debug Stuff
 /*  var size = 25;
@@ -213,6 +278,8 @@ scene.add( axes );*/
  player.position.x = character.x*tileSize-offset
  player.position.z = character.y*tileSize-offset
 scene.add(player)*/
+
+  Map = new MapClass(MapConfig);
   Entity.init();
 
   stats = new Stats();
