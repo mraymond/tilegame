@@ -15,7 +15,7 @@ var Entity = {
     var material = new THREE.MeshNormalMaterial();
     this.mesh = new THREE.Mesh(geometry, material);
     this.drawPosition = {
-      y: Map.tileSize+Map.tileHeight[this.y][this.x]*Map.tileHeightMod+2,
+      y: Map.tileSize+Map.tiles[this.y][this.x].height*Map.tileHeightMod+2,
       x: this.x*Map.tileSize-Map.offset,
       z: this.y*Map.tileSize-Map.offset
     }
@@ -64,7 +64,7 @@ var Entity = {
       for(j = 0; j < this.speed; j++) {
         currentPosition.x -= deltas.x;
         currentPosition.z -= deltas.z
-        this.steps.push({x:currentPosition.x, z: currentPosition.z, y:Map.tileSize+Map.tileHeight[this.walkPath[i][0]][this.walkPath[i][1]]*Map.tileHeightMod+2, drawTile: drawTile});
+        this.steps.push({x:currentPosition.x, z: currentPosition.z, y:Map.tileSize+Map.tiles[this.walkPath[i][0]][this.walkPath[i][1]].height*Map.tileHeightMod+2, drawTile: drawTile});
       }
       lastTile = {x: this.walkPath[i][1], y: this.walkPath[i][0]};
     }
@@ -77,7 +77,7 @@ var Entity = {
       this.addOverlays();
       this.drawPosition.drawTile.x = this.x;
       this.drawPosition.drawTile.z = this.y;
-      this.mesh.position.y = Map.tileSize+Map.tileHeight[this.y][this.x]*Map.tileHeightMod+2;
+      this.mesh.position.y = Map.tileSize+Map.tiles[this.y][this.x].height*Map.tileHeightMod+2;
       this.mesh.position.x = this.x*Map.tileSize-Map.offset
       this.mesh.position.z = this.y*Map.tileSize-Map.offset
       return;

@@ -52,10 +52,10 @@ var TextureLoader = (function () {
     }
 })();
 
-var tiles = {};
+var tileMaterials = {};
 // URL of texture
 
-tiles.grass = function() {
+tileMaterials.grass = function() {
     return new THREE.MultiMaterial([
      new THREE.MeshBasicMaterial( { color: 0x333300 }), // Right
      new THREE.MeshBasicMaterial( { color: 0x333300 }), // back left
@@ -66,7 +66,7 @@ tiles.grass = function() {
   ]);
 }
 
-tiles.water = function() {
+tileMaterials.water = function() {
     return new THREE.MultiMaterial([
      new THREE.MeshBasicMaterial( { color: 0x005577 }), // Right
      new THREE.MeshBasicMaterial( { color: 0x005577 }), // back left
