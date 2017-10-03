@@ -1,16 +1,16 @@
-var Entity = {
-  moveDistance: 4,
-  speed: 10,
-  x: 1,
-  y: 0,
-  possibleMoves: {},
-  walkPath: [],
-  canMove: true,
-  inMotion: false,
-  drawPosition: {},
-  steps: [],
-  mesh: {},
-  init: function() {
+class EntityObj {
+  constructor() {
+    this.moveDistance = 10;
+    this.speed = 4;
+    this.x = 1;
+    this.y = 0;
+    this.possibleMoves = {};
+    this.walkPath = [];
+    this.canMove = true;
+    this.inMotion = false;
+    this.drawPosition = {};
+    this.steps = [];
+    this.mesh = {};
     var geometry = new THREE.SphereGeometry(2, 50, 50, 0, Math.PI * 2, 0, Math.PI * 2);
     var material = new THREE.MeshNormalMaterial();
     this.mesh = new THREE.Mesh(geometry, material);
@@ -24,8 +24,8 @@ var Entity = {
     this.mesh.position.z = this.drawPosition.z;
     scene.add(this.mesh);
     this.addOverlays();
-  },
-  move: function(x,y) {
+  }
+  move(x,y) {
     if(!this.canMove || (this.x == x && this.y == y) || !this.possibleMoves[x+':'+y]) {
       // We didn't move anywhere
       return;
@@ -38,14 +38,13 @@ var Entity = {
     console.log(JSON.parse(JSON.stringify(this.steps)));
     this.x = x;
     this.y = y;
-    tileOverlays = {};
 /*    this.x = x;
     this.y = y;
     this.mesh.position.y = Map.tileSize+Map.tileHeight[this.y][this.x]*Map.tileHeightMod+2;
     this.mesh.position.x = this.x*Map.tileSize-Map.offset
     this.mesh.position.z = this.y*Map.tileSize-Map.offset*/
-  },
-  populateSteps: function() {
+  }
+  populateSteps() {
     this.steps = [];
     var currentPosition = this.drawPosition, nextPosition = {}
     ,deltas = {}, j, drawTile = {}, lastTile = {x: this.x, y: this.y};
@@ -69,8 +68,8 @@ var Entity = {
       lastTile = {x: this.walkPath[i][1], y: this.walkPath[i][0]};
     }
     //console.log(this.steps[this.steps.length-1]);
-  },
-  drawLoop: function() {
+  }
+  drawLoop() {
     if(this.inMotion && this.steps.length == 0) {
       this.canMove = true;
       this.inMotion = false;
@@ -86,10 +85,9 @@ var Entity = {
     this.mesh.position.y = this.drawPosition.y;
     this.mesh.position.x = this.drawPosition.x;
     this.mesh.position.z = this.drawPosition.z;
-  },
-  addOverlays: function() {
+  }
+  addOverlays() {
     var neighbors = this.getNeighbors(this.x,this.y,this.moveDistance);
-    tileOverlays = {};
     this.possibleMoves = {};
     var path;
     for(var i = 0; i < neighbors.length; i++) {
@@ -100,8 +98,8 @@ var Entity = {
 /*      tileOverlays[neighbors[i].x+':'+neighbors[i].y] = 'rgba(255,255,0,.8)';*/
     }
     //console.log(this.possibleMoves); // Doesn't like findPath(map, [5,7], [5,9]);
-  },
-  getNeighbors: function(x,y,radius) {
+  }
+  getNeighbors(x,y,radius) {
     var neighbors = [];
     if(!radius) radius = 1;
     // This returns a circle around coord
