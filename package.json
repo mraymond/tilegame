@@ -1,0 +1,19 @@
+{
+  "name": "isotest",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "webpack serve --open",
+    "build": "webpack"
+  },
+  "repository": "git@github.com:mraymond/tilegame.git",
+  "author": "Michael <michael@novify.me>",
+  "license": "MIT",
+  "devDependencies": {
+    "copy-webpack-plugin": "^9.0.1",
+    "html-webpack-plugin": "^5.3.2",
+    "webpack": "^5.56.0",
+    "webpack-cli": "^4.8.0",
+    "webpack-dev-server": "^4.3.0"
+  }
+}
