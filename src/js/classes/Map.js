@@ -1,3 +1,8 @@
+import Tile from './Tile';
+import {scene} from '../setup';
+
+const objects = [];
+
 class MapClass {
   constructor(mapConfig) {
     this.tiles = [];
@@ -71,3 +76,5 @@ class MapClass {
     return this.tiles[y][x].walkable;
   }
 };
+
+export default MapClass;

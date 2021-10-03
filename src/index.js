@@ -1,8 +1,12 @@
-var mesh, renderer, scene, camera, controls;
+import MapClass from './js/classes/Map';
+import EntityObj from './js/classes/Entity';
+import MapConfig from './js/config/testmap';
+import {renderer, scene, camera, controls} from './js/setup';
 
-var container, raycaster, mouse, objects = [], INTERSECTED;
 
-var tileMap = ['water', 'grass'];
+var container, raycaster, mouse, objects = [], INTERSECTED, Entity, stats ;
+
+
 
 var clock = new THREE.Clock();
 
@@ -19,26 +23,13 @@ function init() {
 
 
   // renderer
-  renderer = new THREE.WebGLRenderer({ alpha: true });
   renderer.setViewport(0, 0, window.innerWidth, window.innerHeight  )
   renderer.setSize( window.innerWidth, window.innerHeight );
   document.body.appendChild( renderer.domElement );
 
-  // scene
-  scene = new THREE.Scene();
+  camera.position.set(-20, 20, 20)
+  camera.lookAt(scene.position)
 
-
-  width = window.innerWidth
-height = window.innerHeight
-aspect = width/height
-D = 20
-
-scene = new THREE.Scene()
-camera = new THREE.OrthographicCamera(-D*aspect, D*aspect, D, -D, .1, 1000)
-camera.position.set(-20, 20, 20)
-camera.lookAt(scene.position)
-
-controls = new THREE.OrbitControls( camera, renderer.domElement );
   //controls.addEventListener( 'change', render );
   controls.enableZoom = true;
   controls.enablePan = true;

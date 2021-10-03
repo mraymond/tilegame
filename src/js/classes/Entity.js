@@ -1,5 +1,47 @@
+import TextureLoader from '../TextureLoader';
+import {scene} from '../setup';
+import findPath from '../util/Path';
 class EntityObj {
   constructor() {
+    function TextureAnimator(texture, tilesHoriz, tilesVert, numTiles, tileDispDuration, row, offset) 
+    { 
+      // note: texture passed by reference, will be updated by the update function.
+        
+      this.tilesHorizontal = tilesHoriz;
+      this.tilesVertical = tilesVert;
+      // how many images does this spritesheet contain?
+      //  usually equals tilesHoriz * tilesVert, but not necessarily,
+      //  if there at blank tiles at the bottom of the spritesheet. 
+      this.numberOfTiles = numTiles;
+      texture.wrapS = texture.wrapT = THREE.RepeatWrapping; 
+      texture.repeat.set( 1 / this.tilesHorizontal, 1 / this.tilesVertical );
+
+      // how long should each image be displayed?
+      this.tileDisplayDuration = tileDispDuration;
+
+      // how long has the current image been displayed?
+      this.currentDisplayTime = 0;
+
+      // which image is currently being displayed?
+      this.currentTile = 0;
+
+      // Which sprite row to use
+      texture.offset.y = 1 / row - .09;
+        
+      this.update = function( milliSec )
+      {
+        this.currentDisplayTime += milliSec;
+        while (this.currentDisplayTime > this.tileDisplayDuration)
+        {
+          this.currentDisplayTime -= this.tileDisplayDuration;
+          this.currentTile++;
+          if (this.currentTile == this.numberOfTiles)
+            this.currentTile = 0;
+          var currentColumn = this.currentTile % this.tilesHorizontal;
+          texture.offset.x = currentColumn / this.tilesHorizontal + offset;
+        }
+      };
+    }
     this.moveDistance = 10;
     this.speed = 4;
     this.x = 1;
@@ -11,14 +53,32 @@ class EntityObj {
     this.drawPosition = {};
     this.steps = [];
     this.mesh = {};
-    var geometry = new THREE.SphereGeometry(2, 50, 50, 0, Math.PI * 2, 0, Math.PI * 2);
+    this.heightMod = 2.51;
+    
+
+    var spriteTexture = TextureLoader.getInstance().load(require('../../assets/sprites/entity_walk_sheet.png'));
+    this.sprite = new TextureAnimator( spriteTexture, 8, 8, 8, 100, 3, 0); // texture, #horiz, #vert, #total, duration.
+    var spriteMaterial = new THREE.MeshBasicMaterial( { map: spriteTexture, side:THREE.DoubleSide, color: 0xff0000 } );
+    spriteMaterial.transparent = true;
+    // spriteMaterial.scale.x = 2;
+    // spriteMaterial.scale.y = 2;
+    //spriteMaterial.wireframe = true;
+    var spriteGeometry = new THREE.PlaneGeometry(5, 5, 1, 1);
+    this.mesh = new THREE.Mesh(spriteGeometry, spriteMaterial);
+    this.mesh.scale.x = 2;
+    this.mesh.scale.y = 2;
+    //runner.position.set(-100,25,0);
+    //scene.add(runner);
+
+    /*var geometry = new THREE.SphereGeometry(2, 50, 50, 0, Math.PI * 2, 0, Math.PI * 2);
     var material = new THREE.MeshNormalMaterial();
-    this.mesh = new THREE.Mesh(geometry, material);
+    this.mesh = new THREE.Mesh(geometry, material);*/
+
     this.drawPosition = {
-      y: Map.tileSize+Map.tiles[this.y][this.x].height*Map.tileHeightMod+2,
+      y: Map.tileSize+Map.tiles[this.y][this.x].height*Map.tileHeightMod+this.heightMod,
       x: this.x*Map.tileSize-Map.offset,
       z: this.y*Map.tileSize-Map.offset
-    }
+    };
     this.mesh.position.y = this.drawPosition.y;
     this.mesh.position.x = this.drawPosition.x;
     this.mesh.position.z = this.drawPosition.z;
@@ -63,7 +123,7 @@ class EntityObj {
       for(j = 0; j < this.speed; j++) {
         currentPosition.x -= deltas.x;
         currentPosition.z -= deltas.z
-        this.steps.push({x:currentPosition.x, z: currentPosition.z, y:Map.tileSize+Map.tiles[this.walkPath[i][0]][this.walkPath[i][1]].height*Map.tileHeightMod+2, drawTile: drawTile});
+        this.steps.push({x:currentPosition.x, z: currentPosition.z, y:Map.tileSize+Map.tiles[this.walkPath[i][0]][this.walkPath[i][1]].height*Map.tileHeightMod+this.heightMod, drawTile: drawTile});
       }
       lastTile = {x: this.walkPath[i][1], y: this.walkPath[i][0]};
     }
@@ -76,7 +136,7 @@ class EntityObj {
       this.addOverlays();
       this.drawPosition.drawTile.x = this.x;
       this.drawPosition.drawTile.z = this.y;
-      this.mesh.position.y = Map.tileSize+Map.tiles[this.y][this.x].height*Map.tileHeightMod+2;
+      this.mesh.position.y = Map.tileSize+Map.tiles[this.y][this.x].height*Map.tileHeightMod+this.heightMod;
       this.mesh.position.x = this.x*Map.tileSize-Map.offset
       this.mesh.position.z = this.y*Map.tileSize-Map.offset
       return;
@@ -133,3 +193,5 @@ class EntityObj {
     return ret;
   }
 }
+
+export default EntityObj;
