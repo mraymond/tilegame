@@ -1,5 +1,15 @@
 import Tile from './Tile';
 import {scene} from '../setup';
+const Tiles = {};
+var req = require.context("../Tiles", true, /^(.*\.(js$))[^.]*$/i);
+req.keys().forEach(function(key){
+  Tiles[key.match(/\.\/(.*?)\.js/)[1]] = req(key).default;
+});
+
+const tileIds = [
+  'Water',
+  'Grass',
+];
 
 const objects = [];
 
@@ -22,12 +32,12 @@ class MapClass {
       for(var j = 0; j < tiles[i].length; j++) {
         if(tiles[i][j] < 0 ) continue;
         // TODO: Add walkable
-        tile = new Tile(tiles[i][j], tileHeight[i][j], (tiles[i][j]==1?true:false));
+        tile = new Tiles[tileIds[tiles[i][j]]](tiles[i][j], tileHeight[i][j]);
         geometry = new THREE.BoxGeometry( this.tileSize, this.tileSize+tileHeight[i][j]*this.tileHeightMod, this.tileSize );
         tile.createMesh(geometry)
-        /* This is can cause performance issues
-        mesh.castShadow = true;
-        mesh.receiveShadow = true;*/
+        /* This is can cause performance issues */
+        // tile.mesh.castShadow = true;
+        // tile.mesh.receiveShadow = true;
         tile.mesh.userData = {
           x: j,
           y: i
@@ -71,7 +81,6 @@ class MapClass {
   }
 
   isWalkable(x,y) {
-    // Hardcoding water as not walkable
     if(this.tiles[y] == null || this.tiles[y][x] == null) return false;
     return this.tiles[y][x].walkable;
   }
