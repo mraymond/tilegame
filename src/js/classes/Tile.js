@@ -10,7 +10,7 @@ class Tile {
   }
 
   createMesh(geometry) {
-    this.mesh = new THREE.Mesh(geometry, this.material());
+    this.mesh = new THREE.Mesh(geometry, this.material);
   }
 }
 
