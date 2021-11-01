@@ -1,8 +1,10 @@
+import * as THREE from 'three';
 import TextureLoader from '../TextureLoader';
 import {scene} from '../setup';
 import findPath from '../util/Path';
 class EntityObj {
-  constructor() {
+  constructor(Map) {
+    this.Map = Map;
     function TextureAnimator(texture, tilesHoriz, tilesVert, numTiles, tileDispDuration, row, offset) 
     { 
       // note: texture passed by reference, will be updated by the update function.
@@ -75,15 +77,15 @@ class EntityObj {
     this.mesh = new THREE.Mesh(geometry, material);*/
 
     this.drawPosition = {
-      y: Map.tileSize+Map.tiles[this.y][this.x].height*Map.tileHeightMod+this.heightMod,
-      x: this.x*Map.tileSize-Map.offset,
-      z: this.y*Map.tileSize-Map.offset
+      y: this.Map.tileSize+this.Map.tiles[this.y][this.x].height*this.Map.tileHeightMod+this.heightMod,
+      x: this.x*this.Map.tileSize-this.Map.offset,
+      z: this.y*this.Map.tileSize-this.Map.offset
     };
     this.mesh.position.y = this.drawPosition.y;
     this.mesh.position.x = this.drawPosition.x;
     this.mesh.position.z = this.drawPosition.z;
     scene.add(this.mesh);
-    this.addOverlays();
+    //this.addOverlays();
   }
   move(x,y) {
     if(!this.canMove || (this.x == x && this.y == y) || !this.possibleMoves[x+':'+y]) {
@@ -110,8 +112,8 @@ class EntityObj {
     ,deltas = {}, j, drawTile = {}, lastTile = {x: this.x, y: this.y};
     for(var i = 0; i < this.walkPath.length; i++) {
       nextPosition = {
-        x: this.walkPath[i][1]*Map.tileSize-Map.offset,
-        z: this.walkPath[i][0]*Map.tileSize-Map.offset
+        x: this.walkPath[i][1]*this.Map.tileSize-this.Map.offset,
+        z: this.walkPath[i][0]*this.Map.tileSize-this.Map.offset
       };
       console.log(currentPosition,nextPosition);
       deltas = {x: (currentPosition.x-nextPosition.x)/this.speed, z: (currentPosition.z-nextPosition.z)/this.speed};
@@ -123,7 +125,7 @@ class EntityObj {
       for(j = 0; j < this.speed; j++) {
         currentPosition.x -= deltas.x;
         currentPosition.z -= deltas.z
-        this.steps.push({x:currentPosition.x, z: currentPosition.z, y:Map.tileSize+Map.tiles[this.walkPath[i][0]][this.walkPath[i][1]].height*Map.tileHeightMod+this.heightMod, drawTile: drawTile});
+        this.steps.push({x:currentPosition.x, z: currentPosition.z, y:this.Map.tileSize+this.Map.tiles[this.walkPath[i][0]][this.walkPath[i][1]].height*this.Map.tileHeightMod+this.heightMod, drawTile: drawTile});
       }
       lastTile = {x: this.walkPath[i][1], y: this.walkPath[i][0]};
     }
@@ -136,9 +138,9 @@ class EntityObj {
       this.addOverlays();
       this.drawPosition.drawTile.x = this.x;
       this.drawPosition.drawTile.z = this.y;
-      this.mesh.position.y = Map.tileSize+Map.tiles[this.y][this.x].height*Map.tileHeightMod+this.heightMod;
-      this.mesh.position.x = this.x*Map.tileSize-Map.offset
-      this.mesh.position.z = this.y*Map.tileSize-Map.offset
+      this.mesh.position.y = this.Map.tileSize+this.Map.tiles[this.y][this.x].height*this.Map.tileHeightMod+this.heightMod;
+      this.mesh.position.x = this.x*this.Map.tileSize-this.Map.offset
+      this.mesh.position.z = this.y*this.Map.tileSize-this.Map.offset
       return;
     }
     this.drawPosition = this.steps.shift();
@@ -151,8 +153,8 @@ class EntityObj {
     this.possibleMoves = {};
     var path;
     for(var i = 0; i < neighbors.length; i++) {
-      if(!Map.isWalkable(neighbors[i].x,neighbors[i].y)) continue; // Use the walkable flag after testing
-      path = findPath(Map.tiles, [this.y,this.x], [neighbors[i].y,neighbors[i].x]);
+      if(!this.Map.isWalkable(neighbors[i].x,neighbors[i].y)) continue; // Use the walkable flag after testing
+      path = findPath(this.Map.tiles, [this.y,this.x], [neighbors[i].y,neighbors[i].x]);
       if(path.length > this.moveDistance+1) continue;
       this.possibleMoves[neighbors[i].x+':'+neighbors[i].y] = path;
 /*      tileOverlays[neighbors[i].x+':'+neighbors[i].y] = 'rgba(255,255,0,.8)';*/
@@ -170,8 +172,8 @@ class EntityObj {
       }
     }*/
     var r, c, cMax, 
-      cols = Map.tiles.length,
-      rows = Map.tiles[0].length, 
+      cols = this.Map.tiles.length,
+      rows = this.Map.tiles[0].length, 
       rMax = Math.min(y + radius + 1, rows),
       ret  = [],
       yOff;
