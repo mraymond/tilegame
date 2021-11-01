@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import Tile from './Tile';
 import {scene} from '../setup';
 const Tiles = {};
@@ -34,6 +35,7 @@ class MapClass {
         // TODO: Add walkable
         tile = new Tiles[tileIds[tiles[i][j]]](tiles[i][j], tileHeight[i][j]);
         geometry = new THREE.BoxGeometry( this.tileSize, this.tileSize+tileHeight[i][j]*this.tileHeightMod, this.tileSize );
+        
         tile.createMesh(geometry)
         /* This is can cause performance issues */
         // tile.mesh.castShadow = true;

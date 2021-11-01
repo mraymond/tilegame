@@ -1,10 +1,11 @@
+import * as THREE from 'three';
 import MapClass from './js/classes/Map';
 import EntityObj from './js/classes/Entity';
 import MapConfig from './js/config/testmap';
 import {renderer, scene, camera, controls} from './js/setup';
 
 
-var container, raycaster, mouse, objects = [], INTERSECTED, Entity, stats ;
+var container, raycaster, mouse, objects = [], INTERSECTED, Entity, stats, Map, Entity;
 
 
 
@@ -36,13 +37,13 @@ function init() {
   controls.enableRotate = false;
   controls.enabled = true;
   controls.maxPolarAngle = Math.PI / 2;
-  var skyBoxGeometry = new THREE.CubeGeometry( 10000, 10000, 10000 );
+  var skyBoxGeometry = new THREE.BoxGeometry( 10000, 10000, 10000 );
   var skyBoxMaterial = new THREE.MeshBasicMaterial( { color: 0xFF0000, side: THREE.BackSide } );
   var skyBox = new THREE.Mesh( skyBoxGeometry, skyBoxMaterial );
    scene.add(skyBox);
-  scene.fog = new THREE.FogExp2( 0xFF0000, 0.9 );
+  //scene.fog = new THREE.FogExp2( 0xFF0000, 0.01 );
   // ambient
-scene.add( new THREE.AmbientLight( 0x444444 ) );
+  scene.add( new THREE.AmbientLight( 0x222222 ) );
 
   // light
   var light = new THREE.PointLight( 0xffffff, 1 );
@@ -51,32 +52,32 @@ scene.add( new THREE.AmbientLight( 0x444444 ) );
   //light.castShadow = true;
 
   // Debug Stuff
-/*  var size = 25;
-var divisions = 10;
+// var size = 25;
+// var divisions = 10;
 
-var gridHelper = new THREE.GridHelper( size, divisions );
-scene.add( gridHelper );
-axes = new THREE.AxisHelper( 100 );
-scene.add( axes );*/
+// var gridHelper = new THREE.GridHelper( size, divisions );
+// scene.add( gridHelper );
+// const axes = new THREE.AxisHelper( 100 );
+// scene.add( axes );
   // geometry
-  /*var character = {
-    x: 1,
-    y: 0
-  }
-  geometry = new THREE.SphereGeometry(2, 50, 50, 0, Math.PI * 2, 0, Math.PI * 2);
- material = new THREE.MeshNormalMaterial();
- var player = new THREE.Mesh(geometry, material);
- player.position.y = tileSize+tileHeight[character.y][character.x]*tileHeightMod+2;
- player.position.x = character.x*tileSize-offset
- player.position.z = character.y*tileSize-offset
-scene.add(player)*/
+//   var character = {
+//     x: 1,
+//     y: 0
+//   }
+//   geometry = new THREE.SphereGeometry(2, 50, 50, 0, Math.PI * 2, 0, Math.PI * 2);
+//  material = new THREE.MeshNormalMaterial();
+//  var player = new THREE.Mesh(geometry, material);
+//  player.position.y = tileSize+tileHeight[character.y][character.x]*tileHeightMod+2;
+//  player.position.x = character.x*tileSize-offset
+//  player.position.z = character.y*tileSize-offset
+// scene.add(player)
 
   Map = new MapClass(MapConfig);
-  Entity = new EntityObj();
-  stats = new Stats();
-  stats.showPanel( 0 );
+  Entity = new EntityObj(Map);
+  // stats = new Stats();
+  // stats.showPanel( 0 );
  
-  document.body.appendChild( stats.dom );
+  // document.body.appendChild( stats.dom );
 
 raycaster = new THREE.Raycaster();
         mouse = new THREE.Vector2();
@@ -120,23 +121,24 @@ function onDocumentMouseDown( event ) {
 
 
 function render() {
-  stats.begin();
+  //stats.begin();
   var temp = 2;
   raycaster.setFromCamera( mouse, camera );
 
   var intersects = raycaster.intersectObjects( scene.children );
-
   if ( intersects.length > 0 ) {
-    if ( INTERSECTED != intersects[ 0 ].object && intersects[0].object.material.type == "MultiMaterial" ) {
-      if ( INTERSECTED ) INTERSECTED.material.materials[temp].emissive = new THREE.Color(0x000000);
-      INTERSECTED = intersects[ 0 ].object;
-      console.log("Hovering over",INTERSECTED.userData.x, INTERSECTED.userData.y);
-      INTERSECTED.material.materials[temp].emissive = new THREE.Color(0xff0000)
+    if ( INTERSECTED != intersects[ 0 ].object) {
+      if ( INTERSECTED ) INTERSECTED.material[2].emissive.setHex(0x000000);
+      if (intersects[ 0 ].object?.userData?.x) { 
+        INTERSECTED = intersects[ 0 ].object;
+        console.log("Hovering over", INTERSECTED.userData.x, INTERSECTED.userData.y);
+        INTERSECTED.material[2].emissive.setHex(0xff0000);
+      }
     }
 
   } else {
     if(INTERSECTED) {
-      INTERSECTED.material.materials[temp].emissive = new THREE.Color(0x000000)
+      INTERSECTED.material[2].emissive.setHex(0x000000);
 
       INTERSECTED = null;
     }
@@ -148,6 +150,6 @@ function render() {
     Entity.drawLoop();
   }
   renderer.render( scene, camera );
-  stats.end();
+  //stats.end();
   requestAnimationFrame(render);
 }
