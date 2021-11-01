@@ -1,11 +1,12 @@
 import * as THREE from 'three';
+import Stats from 'stats.js';
 import MapClass from './js/classes/Map';
 import EntityObj from './js/classes/Entity';
 import MapConfig from './js/config/testmap';
 import {renderer, scene, camera, controls} from './js/setup';
 
 
-var container, raycaster, mouse, objects = [], INTERSECTED, Entity, stats, Map, Entity;
+var container, raycaster, mouse, objects = [], INTERSECTED, stats, Entity, Map, Entity;
 
 
 
@@ -74,10 +75,10 @@ function init() {
 
   Map = new MapClass(MapConfig);
   Entity = new EntityObj(Map);
-  // stats = new Stats();
-  // stats.showPanel( 0 );
+   stats = new Stats();
+   stats.showPanel( 0 );
  
-  // document.body.appendChild( stats.dom );
+   document.body.appendChild( stats.dom );
 
 raycaster = new THREE.Raycaster();
         mouse = new THREE.Vector2();
@@ -121,7 +122,7 @@ function onDocumentMouseDown( event ) {
 
 
 function render() {
-  //stats.begin();
+  stats.begin();
   var temp = 2;
   raycaster.setFromCamera( mouse, camera );
 
@@ -150,6 +151,6 @@ function render() {
     Entity.drawLoop();
   }
   renderer.render( scene, camera );
-  //stats.end();
+  stats.end();
   requestAnimationFrame(render);
 }
